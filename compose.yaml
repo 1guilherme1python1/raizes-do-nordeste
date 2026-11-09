@@ -1,0 +1,58 @@
+services:
+  database:
+    image: postgres:16.10-alpine3.22
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-raizes_nordeste}
+      POSTGRES_USER: ${POSTGRES_USER:-raizes_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_development_only}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  application:
+    image: raizes-do-nordeste-backend:0.0.1-SNAPSHOT
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-raizes_nordeste}
+      DB_USER: ${POSTGRES_USER:-raizes_app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-local_development_only}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be configured}
+      JWT_ISSUER: ${JWT_ISSUER:-raizes-do-nordeste-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-raizes-do-nordeste-clients}
+      DEV_ADMIN_ENABLED: ${DEV_ADMIN_ENABLED:-false}
+      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-}
+      DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-}
+      DEV_ADMIN_DISPLAY_NAME: ${DEV_ADMIN_DISPLAY_NAME:-Administrador de Desenvolvimento}
+      ORDER_RESERVATION_DURATION: ${ORDER_RESERVATION_DURATION:-PT15M}
+      ORDER_EXPIRATION_ENABLED: ${ORDER_EXPIRATION_ENABLED:-true}
+      ORDER_EXPIRATION_FIXED_DELAY: ${ORDER_EXPIRATION_FIXED_DELAY:-PT1M}
+      ORDER_EXPIRATION_BATCH_SIZE: ${ORDER_EXPIRATION_BATCH_SIZE:-50}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--output-document=-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
