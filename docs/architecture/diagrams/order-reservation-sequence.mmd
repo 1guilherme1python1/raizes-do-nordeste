@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor U as Usuário autenticado
+    participant API as Pedido API
+    participant P as PedidoService
+    participant C as Catálogo
+    participant E as Estoque
+    participant DB as PostgreSQL
+    U->>API: POST /api/v1/pedidos + Idempotency-Key
+    API->>P: comando + identidade/perfis
+    P->>DB: advisory lock e consulta da chave
+    P->>C: validar unidade, produto, oferta e preço
+    P->>DB: persistir pedido e snapshots
+    P->>E: reservar itens em ordem estável
+    E->>DB: atualizar reservado + movimentos RESERVA
+    DB-->>P: commit atômico
+    P-->>API: 201 (ou 200 em repetição)
+
+    alt cancelamento ou expiração
+        P->>DB: lock do pedido e revalidação do status
+        P->>E: liberar reservas
+        E->>DB: movimentos LIBERACAO
+        P->>DB: CANCELADO ou EXPIRADO
+    end
