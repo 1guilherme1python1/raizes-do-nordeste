@@ -1,0 +1,161 @@
+classDiagram
+    direction LR
+
+    class Usuario {
+        +UUID id
+        +String codigo
+        +String nomeExibicao
+        +String emailNormalizado
+        +String senhaHash
+        +Perfil perfil
+        +boolean ativo
+        +Instant criadoEm
+        +Instant atualizadoEm
+    }
+    class Unidade {
+        +UUID id
+        +String codigo
+        +String nome
+        +boolean ativa
+        +Instant criadoEm
+        +Instant atualizadoEm
+    }
+    class Produto {
+        +UUID id
+        +String sku
+        +String nome
+        +String descricao
+        +boolean ativo
+        +Instant criadoEm
+        +Instant atualizadoEm
+    }
+    class ProdutoUnidade {
+        +UUID id
+        +UUID produtoId
+        +UUID unidadeId
+        +BigDecimal preco
+        +boolean disponivel
+        +Instant criadoEm
+        +Instant atualizadoEm
+    }
+    class Estoque {
+        +UUID id
+        +UUID produtoUnidadeId
+        +UUID unidadeId
+        +int quantidadeFisica
+        +int quantidadeReservada
+        +long versao
+        +Instant criadoEm
+        +Instant atualizadoEm
+        +int quantidadeDisponivel()
+    }
+    class MovimentacaoEstoque {
+        +UUID id
+        +UUID estoqueId
+        +UUID unidadeId
+        +UUID responsavelUsuarioId
+        +TipoMovimentacaoEstoque tipo
+        +int quantidade
+        +int quantidadeFisicaResultante
+        +int quantidadeReservadaResultante
+        +String motivo
+        +String idempotencyKey
+        +String requisicaoHash
+        +Instant criadoEm
+    }
+    class Pedido {
+        +UUID id
+        +UUID unidadeId
+        +UUID clienteId
+        +UUID criadoPorUsuarioId
+        +CanalPedido canalPedido
+        +StatusPedido status
+        +FormaPagamento formaPagamento
+        +BigDecimal valorTotal
+        +String moeda
+        +Instant reservaExpiraEm
+        +String idempotencyKey
+        +List~ItemPedido~ itens
+        +Instant criadoEm
+        +Instant atualizadoEm
+    }
+    class ItemPedido {
+        +UUID id
+        +UUID produtoUnidadeId
+        +UUID produtoId
+        +int quantidade
+        +BigDecimal precoUnitario
+        +BigDecimal subtotal
+        +Instant criadoEm
+        +Instant atualizadoEm
+    }
+    class Pagamento {
+        +UUID id
+        +UUID pedidoId
+        +int numeroTentativa
+        +StatusPagamento status
+        +String transacaoId
+        +Instant solicitadoEm
+        +Instant resultadoEm
+        +String motivoResultado
+        +Instant criadoEm
+        +Instant atualizadoEm
+    }
+    class CanalPedido {
+        <<enumeration>>
+        APP
+        TOTEM
+        BALCAO
+        PICKUP
+        WEB
+    }
+    class StatusPedido {
+        <<enumeration>>
+        AGUARDANDO_PAGAMENTO
+        CONFIRMADO
+        EM_PREPARO
+        PRONTO
+        ENTREGUE
+        CANCELADO
+        EXPIRADO
+    }
+    class StatusPagamento {
+        <<enumeration>>
+        PENDENTE
+        APROVADO
+        RECUSADO
+    }
+    class TipoMovimentacaoEstoque {
+        <<enumeration>>
+        ENTRADA
+        SAIDA
+        RESERVA
+        LIBERACAO
+        AJUSTE
+    }
+    class Perfil {
+        <<enumeration>>
+        ADMIN
+        GERENTE
+        ATENDENTE
+        COZINHA
+        CLIENTE
+    }
+
+    Produto "1" --> "0..*" ProdutoUnidade
+    Unidade "1" --> "0..*" ProdutoUnidade
+    ProdutoUnidade "1" --> "0..1" Estoque
+    Estoque "1" --> "0..*" MovimentacaoEstoque
+    Unidade "1" --> "0..*" MovimentacaoEstoque
+    Usuario "0..1" --> "0..*" MovimentacaoEstoque
+    Usuario "0..*" --> "0..*" Unidade : vinculo operacional
+    Unidade "1" --> "0..*" Pedido
+    Usuario "0..1" --> "0..*" Pedido
+    Pedido "1" *-- "1..*" ItemPedido
+    Pedido "1" --> "0..*" Pagamento
+    ProdutoUnidade "1" --> "0..*" ItemPedido
+    Pedido --> CanalPedido
+    Pedido --> StatusPedido
+    Pagamento --> StatusPagamento
+    MovimentacaoEstoque --> TipoMovimentacaoEstoque
+    Usuario --> Perfil
