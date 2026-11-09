@@ -1,0 +1,125 @@
+erDiagram
+    USUARIO {
+        uuid id PK
+        varchar codigo UK
+        varchar nome_exibicao
+        varchar email_normalizado UK
+        varchar senha_hash
+        varchar perfil
+        boolean ativo
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+    UNIDADE {
+        uuid id PK
+        varchar codigo UK
+        varchar nome
+        boolean ativa
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+    USUARIO_UNIDADE {
+        uuid usuario_id PK,FK
+        uuid unidade_id PK,FK
+        timestamptz criado_em
+    }
+    PRODUTO {
+        uuid id PK
+        varchar sku UK
+        varchar nome
+        varchar descricao
+        boolean ativo
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+    PRODUTO_UNIDADE {
+        uuid id PK
+        uuid produto_id FK
+        uuid unidade_id FK
+        numeric preco
+        boolean disponivel
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+    ESTOQUE {
+        uuid id PK
+        uuid produto_unidade_id FK,UK
+        uuid unidade_id FK
+        integer quantidade_fisica
+        integer quantidade_reservada
+        bigint versao
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+    MOVIMENTACAO_ESTOQUE {
+        uuid id PK
+        uuid estoque_id FK
+        uuid unidade_id FK
+        uuid responsavel_usuario_id FK
+        varchar tipo
+        integer quantidade
+        integer quantidade_fisica_resultante
+        integer quantidade_reservada_resultante
+        varchar motivo
+        varchar idempotency_key UK
+        varchar requisicao_hash
+        uuid pedido_id FK
+        uuid item_pedido_id FK
+        timestamptz criado_em
+    }
+    PEDIDO {
+        uuid id PK
+        uuid unidade_id FK
+        uuid cliente_id FK
+        uuid criado_por_usuario_id FK
+        varchar canal_pedido
+        varchar status
+        varchar forma_pagamento
+        numeric valor_total
+        varchar moeda
+        timestamptz reserva_expira_em
+        varchar idempotency_key UK
+        varchar requisicao_hash
+        bigint versao
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+    ITEM_PEDIDO {
+        uuid id PK
+        uuid pedido_id FK
+        uuid unidade_id FK
+        uuid produto_unidade_id FK
+        uuid produto_id FK
+        integer quantidade
+        numeric preco_unitario
+        numeric subtotal
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+    PAGAMENTO {
+        uuid id PK
+        uuid pedido_id FK
+        integer numero_tentativa
+        varchar status
+        varchar transacao_id UK
+        timestamptz solicitado_em
+        timestamptz resultado_em
+        varchar motivo_resultado
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+
+    PRODUTO ||--o{ PRODUTO_UNIDADE : ofertado_em
+    UNIDADE ||--o{ PRODUTO_UNIDADE : define
+    PRODUTO_UNIDADE ||--o| ESTOQUE : possui
+    UNIDADE ||--o{ ESTOQUE : localiza
+    ESTOQUE ||--o{ MOVIMENTACAO_ESTOQUE : registra
+    UNIDADE ||--o{ MOVIMENTACAO_ESTOQUE : audita
+    USUARIO o|--o{ MOVIMENTACAO_ESTOQUE : executa
+    USUARIO ||--o{ USUARIO_UNIDADE : possui
+    UNIDADE ||--o{ USUARIO_UNIDADE : autoriza
+    UNIDADE ||--o{ PEDIDO : recebe
+    USUARIO o|--o{ PEDIDO : realiza
+    PEDIDO ||--|{ ITEM_PEDIDO : contem
+    PRODUTO_UNIDADE ||--o{ ITEM_PEDIDO : referencia
+    PEDIDO ||--o{ PAGAMENTO : tenta
