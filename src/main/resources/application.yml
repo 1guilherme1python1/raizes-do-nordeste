@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: raizes-do-nordeste
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:raizes_nordeste}
+    username: ${DB_USER:raizes_app}
+    password: ${DB_PASSWORD:local_development_only}
+  flyway:
+    enabled: true
+    schemas: app
+    create-schemas: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: app
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      issuer: ${JWT_ISSUER:raizes-do-nordeste-api}
+      audience: ${JWT_AUDIENCE:raizes-do-nordeste-clients}
+      access-token-validity: PT30M
+  dev:
+    admin:
+      enabled: ${DEV_ADMIN_ENABLED:false}
+      email: ${DEV_ADMIN_EMAIL:}
+      password: ${DEV_ADMIN_PASSWORD:}
+      display-name: ${DEV_ADMIN_DISPLAY_NAME:Administrador de Desenvolvimento}
+  pedidos:
+    reservation-duration: ${ORDER_RESERVATION_DURATION:PT15M}
+    expiration:
+      enabled: ${ORDER_EXPIRATION_ENABLED:true}
+      fixed-delay: ${ORDER_EXPIRATION_FIXED_DELAY:PT1M}
+      batch-size: ${ORDER_EXPIRATION_BATCH_SIZE:50}
+
