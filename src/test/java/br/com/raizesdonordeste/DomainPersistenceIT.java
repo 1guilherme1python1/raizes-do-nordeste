@@ -106,10 +106,10 @@ class DomainPersistenceIT {
             assertThat(connection.getMetaData().getDatabaseProductName()).isEqualTo("PostgreSQL");
         }
 
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("5");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("7");
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM app.flyway_schema_history WHERE success AND version IS NOT NULL",
-                Integer.class)).isEqualTo(5);
+                Integer.class)).isEqualTo(7);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM information_schema.tables
                 WHERE table_schema = 'app'

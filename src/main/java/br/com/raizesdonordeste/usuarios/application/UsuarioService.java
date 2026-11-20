@@ -11,6 +11,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Service
 public class UsuarioService {
@@ -18,12 +19,14 @@ public class UsuarioService {
     private final UsuarioJpaRepository repository;
     private final EmailNormalizer emailNormalizer;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbc;
 
     public UsuarioService(UsuarioJpaRepository repository, EmailNormalizer emailNormalizer,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, JdbcTemplate jdbc) {
         this.repository = repository;
         this.emailNormalizer = emailNormalizer;
         this.passwordEncoder = passwordEncoder;
+        this.jdbc = jdbc;
     }
 
     @Transactional
@@ -33,7 +36,21 @@ public class UsuarioService {
 
     @Transactional
     public Usuario criarInterno(CriarUsuarioCommand command) {
-        return criar(command);
+        var usuario = criar(command);
+        auditarCriacao(usuario.id(), null);
+        return usuario;
+    }
+
+    @Transactional
+    public Usuario criarInterno(CriarUsuarioCommand command, UUID atorId) {
+        var usuario = criar(command);
+        auditarCriacao(usuario.id(), java.util.Objects.requireNonNull(atorId));
+        return usuario;
+    }
+
+    private void auditarCriacao(UUID usuarioId, UUID atorId) {
+        jdbc.update("insert into app.auditoria_administrativa(id,ator_id,origem,acao,usuario_alvo_id) values (?,?,?,?,?)",
+                UUID.randomUUID(), atorId, atorId == null ? "SISTEMA" : "USUARIO", "CRIAR_USUARIO_INTERNO", usuarioId);
     }
 
     @Transactional(readOnly = true)

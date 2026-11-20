@@ -69,9 +69,9 @@ public class UsuarioController {
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     @ApiResponse(responseCode = "422", description = "Entrada inválida",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
-    public ResponseEntity<UsuarioResponse> criar(@Valid @RequestBody CriarUsuarioRequest request) {
+    public ResponseEntity<UsuarioResponse> criar(@Valid @RequestBody CriarUsuarioRequest request, JwtAuthenticationToken authentication) {
         var usuario = usuarioService.criarInterno(new CriarUsuarioCommand(request.nomeExibicao(), request.email(),
-                request.senha(), request.perfil()));
+                request.senha(), request.perfil()), UUID.fromString(authentication.getName()));
         return ResponseEntity.status(HttpStatus.CREATED).body(UsuarioResponse.from(usuario));
     }
 }

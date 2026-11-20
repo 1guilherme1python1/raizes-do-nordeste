@@ -61,7 +61,7 @@ erDiagram
         integer quantidade_fisica_resultante
         integer quantidade_reservada_resultante
         varchar motivo
-        varchar idempotency_key UK
+        varchar idempotency_key
         varchar requisicao_hash
         uuid pedido_id FK
         uuid item_pedido_id FK
@@ -78,7 +78,7 @@ erDiagram
         numeric valor_total
         varchar moeda
         timestamptz reserva_expira_em
-        varchar idempotency_key UK
+        varchar idempotency_key
         varchar requisicao_hash
         bigint versao
         timestamptz criado_em
@@ -105,8 +105,32 @@ erDiagram
         timestamptz solicitado_em
         timestamptz resultado_em
         varchar motivo_resultado
+        uuid solicitante_id FK
+        varchar idempotency_key
+        varchar requisicao_hash
+        numeric valor
+        varchar moeda
         timestamptz criado_em
         timestamptz atualizado_em
+    }
+    PEDIDO_TRANSICAO {
+        uuid id PK
+        uuid pedido_id FK
+        uuid ator_id FK
+        varchar origem
+        varchar estado_anterior
+        varchar estado_novo
+        varchar motivo
+        timestamptz ocorrido_em
+    }
+    AUDITORIA_ADMINISTRATIVA {
+        uuid id PK
+        uuid ator_id FK
+        varchar origem
+        varchar acao
+        uuid usuario_alvo_id FK
+        uuid unidade_id FK
+        timestamptz ocorrido_em
     }
 
     PRODUTO ||--o{ PRODUTO_UNIDADE : ofertado_em
@@ -123,3 +147,12 @@ erDiagram
     PEDIDO ||--|{ ITEM_PEDIDO : contem
     PRODUTO_UNIDADE ||--o{ ITEM_PEDIDO : referencia
     PEDIDO ||--o{ PAGAMENTO : tenta
+    PEDIDO ||--o{ PEDIDO_TRANSICAO : registra
+    USUARIO o|--o{ PEDIDO_TRANSICAO : executa
+    USUARIO o|--o{ PEDIDO : cria
+    USUARIO o|--o{ PAGAMENTO : solicita
+    PEDIDO o|--o{ MOVIMENTACAO_ESTOQUE : referencia
+    ITEM_PEDIDO o|--o{ MOVIMENTACAO_ESTOQUE : referencia
+    USUARIO o|--o{ AUDITORIA_ADMINISTRATIVA : executa
+    USUARIO ||--o{ AUDITORIA_ADMINISTRATIVA : alvo
+    UNIDADE o|--o{ AUDITORIA_ADMINISTRATIVA : escopo

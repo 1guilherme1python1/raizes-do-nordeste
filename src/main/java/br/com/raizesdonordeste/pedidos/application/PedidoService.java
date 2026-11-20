@@ -110,6 +110,7 @@ public class PedidoService {
         if(p.getStatus()==StatusPedido.CANCELADO) return p.toDomain();
         if(p.getStatus()!=StatusPedido.AGUARDANDO_PAGAMENTO) throw new ConflitoException("Pedido não pode ser cancelado no estado atual");
         estoque.liberarPedido(p.getUnidadeId(),ator.usuarioId(),p.getId(),reservas(p));
+        jdbc.update("insert into app.pedido_transicao(id,pedido_id,ator_id,origem,estado_anterior,estado_novo,motivo,ocorrido_em) values (?,?,?,?,?,?,?,?)", UUID.randomUUID(),p.getId(),ator.usuarioId(),"USUARIO",p.getStatus().name(),"CANCELADO","CANCELAMENTO",java.sql.Timestamp.from(clock.instant()));
         p.cancelar(); return pedidos.saveAndFlush(p).toDomain();
     }
 

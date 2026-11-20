@@ -92,6 +92,21 @@ public class EstoqueService {
         });
     }
 
+    public void confirmarPedido(UUID unidadeId, UUID responsavelId, UUID pedidoId, List<ReservaItem> itens) {
+        itens.stream().sorted(Comparator.comparing(ReservaItem::produtoId)).forEach(item -> {
+            var oferta = catalogo.buscarOferta(unidadeId, item.produtoId());
+            var saldo = estoques.findByProdutoUnidadeId(oferta.id())
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Estoque"));
+            saldo.confirmarReserva(item.quantidade());
+            estoques.saveAndFlush(saldo);
+            var chave = "PED:" + pedidoId + ":ITEM:" + item.itemPedidoId() + ":B";
+            movimentos.saveAndFlush(MovimentacaoEstoqueEntity.fromDomain(new MovimentacaoEstoque(
+                    UUID.randomUUID(), saldo.getId(), unidadeId, responsavelId, TipoMovimentacaoEstoque.SAIDA,
+                    item.quantidade(), saldo.getQuantidadeFisica(), saldo.getQuantidadeReservada(),
+                    "Baixa de pedido pago", chave, hash(chave), pedidoId, item.itemPedidoId(), Instant.now())));
+        });
+    }
+
     @Transactional(readOnly=true)
     public Page<MovimentoRegistrado> historico(UUID unidadeId,UUID usuarioId,boolean admin,boolean gerente,
             TipoMovimentacaoEstoque tipo,Pageable pageable){

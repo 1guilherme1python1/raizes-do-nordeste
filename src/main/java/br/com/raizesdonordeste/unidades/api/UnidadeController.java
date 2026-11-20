@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @RestController @RequestMapping("/api/v1/unidades") @Tag(name="Unidades")
 public class UnidadeController {
@@ -48,13 +49,13 @@ public class UnidadeController {
     @PutMapping("/{unidadeId}/usuarios/{usuarioId}") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary="Associa funcionário à unidade", security=@SecurityRequirement(name="bearerAuth"))
     @ApiResponse(responseCode="204",description="Vínculo criado") @ApiResponse(responseCode="403",description="Somente ADMIN",content=@Content(schema=@Schema(implementation=ApiError.class))) @ApiResponse(responseCode="409",description="Perfil não operacional",content=@Content(schema=@Schema(implementation=ApiError.class)))
-    public ResponseEntity<Void> associar(@PathVariable UUID unidadeId,@PathVariable UUID usuarioId) {
-        acesso.associar(unidadeId,usuarioId); return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> associar(@PathVariable UUID unidadeId,@PathVariable UUID usuarioId, JwtAuthenticationToken auth) {
+        acesso.associar(unidadeId,usuarioId,UUID.fromString(auth.getName())); return ResponseEntity.noContent().build();
     }
     @DeleteMapping("/{unidadeId}/usuarios/{usuarioId}") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary="Desassocia funcionário da unidade", security=@SecurityRequirement(name="bearerAuth"))
     @ApiResponse(responseCode="204",description="Vínculo removido") @ApiResponse(responseCode="403",description="Somente ADMIN",content=@Content(schema=@Schema(implementation=ApiError.class))) @ApiResponse(responseCode="404",description="Vínculo inexistente",content=@Content(schema=@Schema(implementation=ApiError.class)))
-    public ResponseEntity<Void> desassociar(@PathVariable UUID unidadeId,@PathVariable UUID usuarioId) {
-        acesso.desassociar(unidadeId,usuarioId); return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> desassociar(@PathVariable UUID unidadeId,@PathVariable UUID usuarioId, JwtAuthenticationToken auth) {
+        acesso.desassociar(unidadeId,usuarioId,UUID.fromString(auth.getName())); return ResponseEntity.noContent().build();
     }
 }

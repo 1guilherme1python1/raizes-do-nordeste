@@ -28,7 +28,6 @@ public interface PedidoJpaRepository extends JpaRepository<PedidoEntity, UUID>, 
             UUID criadoPorUsuarioId, UUID unidadeId, String idempotencyKey);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @EntityGraph(attributePaths = "itens")
     @Query("select p from PedidoEntity p where p.id = :id")
     Optional<PedidoEntity> findForUpdateById(@Param("id") UUID id);
 

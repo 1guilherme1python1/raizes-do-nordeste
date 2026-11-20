@@ -19,13 +19,13 @@ A V2 cria o modelo inicial e a V3 adiciona credenciais e perfil. A V4 cria `usua
 
 A V5 associa movimentos de reserva/liberação ao pedido e item, adiciona versão, vencimento, criador e chave/hash idempotente ao pedido. Um índice parcial atende a busca de pedidos pendentes vencidos. Pedido, itens e todas as reservas são confirmados ou revertidos juntos.
 
-`pagamento` representa uma tentativa, não o pagamento agregado: a unicidade `(pedido_id, numero_tentativa)` permite várias tentativas ordenadas e impede duplicidade. O identificador de transação também é único.
+`pagamento` representa uma tentativa: o schema legado admite tentativas ordenadas; a V6 limita a uma tentativa efetiva por pedido com solicitante. A V6 registra transições e a V7 registra operações administrativas. O identificador de transação é único.
 
 ## Fronteiras
 
 Cada módulo será proprietário lógico de suas tabelas e repositories. Outros módulos não poderão consultar essas tabelas diretamente. O uso de um banco físico único não elimina essa fronteira.
 
-Transações devem começar nos casos de uso de aplicação. Transações distribuídas não fazem parte da solução. Para o MVP, pedido, estoque e pagamento estão no mesmo processo e banco, mas a ordem entre reserva, tentativa de pagamento e confirmação ainda precisa de decisão explícita.
+Transações começam nos casos de uso de aplicação. Pedido, estoque e pagamento mock estão no mesmo processo e banco; reserva ocorre na criação, e aprovação baixa físico e reservado atomicamente. Não há transações distribuídas.
 
 ## Riscos a controlar
 

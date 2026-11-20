@@ -43,5 +43,5 @@ O bootstrap só existe no perfil `dev` e requer `DEV_ADMIN_ENABLED=true`, `DEV_A
 - revogação, refresh token e invalidação por desativação/troca de perfil;
 - rate limiting, bloqueio por tentativas e recuperação de senha;
 - definição futura das transições posteriores ao pagamento para ATENDENTE e COZINHA;
-- auditoria de operações administrativas;
+- retenção e controle de acesso operacional às trilhas administrativas adicionadas pela V7;
 - política CORS antes de integração com front-end.

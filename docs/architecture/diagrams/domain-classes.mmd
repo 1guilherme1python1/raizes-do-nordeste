@@ -61,6 +61,8 @@ classDiagram
         +String motivo
         +String idempotencyKey
         +String requisicaoHash
+        +UUID pedidoId
+        +UUID itemPedidoId
         +Instant criadoEm
     }
     class Pedido {
@@ -76,6 +78,7 @@ classDiagram
         +Instant reservaExpiraEm
         +String idempotencyKey
         +List~ItemPedido~ itens
+        +long versao
         +Instant criadoEm
         +Instant atualizadoEm
     }
@@ -101,6 +104,17 @@ classDiagram
         +Instant criadoEm
         +Instant atualizadoEm
     }
+    class PedidoTransicao {
+        <<registro SQL>>
+        +UUID pedidoId
+        +UUID atorId
+        +String origem
+        +StatusPedido estadoAnterior
+        +StatusPedido estadoNovo
+        +String motivo
+        +Instant ocorridoEm
+    }
+    Pedido "1" --> "0..*" PedidoTransicao
     class CanalPedido {
         <<enumeration>>
         APP
@@ -108,6 +122,10 @@ classDiagram
         BALCAO
         PICKUP
         WEB
+    }
+    class FormaPagamento {
+        <<enumeration>>
+        MOCK
     }
     class StatusPedido {
         <<enumeration>>
@@ -156,6 +174,7 @@ classDiagram
     ProdutoUnidade "1" --> "0..*" ItemPedido
     Pedido --> CanalPedido
     Pedido --> StatusPedido
+    Pedido --> FormaPagamento
     Pagamento --> StatusPagamento
     MovimentacaoEstoque --> TipoMovimentacaoEstoque
     Usuario --> Perfil

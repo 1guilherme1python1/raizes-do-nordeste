@@ -89,4 +89,12 @@ public class EstoqueEntity extends AuditableEntity {
         }
         quantidadeReservada -= quantidade;
     }
+
+    public void confirmarReserva(int quantidade) {
+        if (quantidade <= 0 || quantidade > quantidadeReservada) {
+            throw new IllegalArgumentException("Reserva de estoque inválida");
+        }
+        quantidadeReservada -= quantidade;
+        quantidadeFisica -= quantidade;
+    }
 }

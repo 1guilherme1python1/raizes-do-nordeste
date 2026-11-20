@@ -21,6 +21,8 @@ Os módulos, fluxo de MVP e regras de dependência estão em [modules.md](module
 
 ## Registro das decisões
 
+O inventário de dados, matriz de auditoria e proposta de fidelização estão em [privacy-audit.md](privacy-audit.md).
+
 - [ADR-0001 — Monólito modular por funcionalidade](adr/0001-modular-monolith.md)
 - [ADR-0002 — Flyway como autoridade do schema](adr/0002-flyway-schema-authority.md)
 - [ADR-0003 — Integração com PostgreSQL via Testcontainers](adr/0003-postgresql-integration-tests.md)

@@ -1,0 +1,1504 @@
+{
+  "info": {
+    "name": "Raízes do Nordeste — TASK-010",
+    "description": "Execução sequencial com dados sintéticos; configurar credenciais administrativas temporárias no ambiente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get(\"runId\")) { pm.environment.set(\"runId\", Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/actuator/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "actuator",
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 8));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Aplicação saudável\",()=>pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Login administrador",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"{{adminEmail}}\",\"senha\":\"{{adminPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "if(pm.response.code<300)pm.environment.set(\"adminToken\",pm.response.json().accessToken);if(pm.response.code<300)pm.environment.set(\"adminId\",pm.response.json().usuario.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Cadastrar cliente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/usuarios/registro",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "usuarios",
+            "registro"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nomeExibicao\":\"Cliente sintético\",\"email\":\"cliente-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "if(pm.response.code<300)pm.environment.set(\"clienteId\",pm.response.json().id);pm.test(\"Sem senha ou hash\",()=>{pm.expect(pm.response.json()).not.to.have.property(\"senha\");pm.expect(pm.response.json()).not.to.have.property(\"senhaHash\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Login cliente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"cliente-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "if(pm.response.code<300)pm.environment.set(\"clienteToken\",pm.response.json().accessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Cadastrar outro cliente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/usuarios/registro",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "usuarios",
+            "registro"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nomeExibicao\":\"Outro cliente sintético\",\"email\":\"outro-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Login outro cliente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"outro-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "if(pm.response.code<300)pm.environment.set(\"outroToken\",pm.response.json().accessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Cadastrar funcionário auditado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/usuarios",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "usuarios"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nomeExibicao\":\"Atendente sintético\",\"email\":\"atendente-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\",\"perfil\":\"ATENDENTE\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "if(pm.response.code<300)pm.environment.set(\"funcionarioId\",pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Criar unidade",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"codigo\":\"UND-{{runId}}\",\"nome\":\"Unidade sintética\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "if(pm.response.code<300)pm.environment.set(\"unidadeId\",pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Vincular funcionário auditado",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/usuarios/{{funcionarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "usuarios",
+            "{{funcionarioId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 204\",()=>pm.expect(pm.response.code).to.eql(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Repetir vínculo",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/usuarios/{{funcionarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "usuarios",
+            "{{funcionarioId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 204\",()=>pm.expect(pm.response.code).to.eql(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Criar produto",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/produtos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "produtos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"sku\":\"SKU-{{runId}}\",\"nome\":\"Produto sintético\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "if(pm.response.code<300)pm.environment.set(\"produtoId\",pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Configurar oferta",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/produtos/{{produtoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "produtos",
+            "{{produtoId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"preco\":12.5,\"disponivel\":true}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Entrada de estoque",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-estoque"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque/movimentacoes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "estoque",
+            "movimentacoes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"produtoId\":\"{{produtoId}}\",\"tipo\":\"ENTRADA\",\"quantidade\":10,\"motivo\":\"Carga sintética\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "pm.test(\"Físico 10, reservado 0\",()=>{let j=pm.response.json();pm.expect(j.quantidadeFisicaResultante).to.eql(10);pm.expect(j.quantidadeReservadaResultante).to.eql(0);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Pedido para aprovação",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-pedido-aprovado"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":2}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "if(pm.response.code<300)pm.environment.set(\"pedidoAprovado\",pm.response.json().id);pm.test(\"Total e estado\",()=>{let j=pm.response.json();pm.expect(j.valorTotal).to.eql(25);pm.expect(j.status).to.eql(\"AGUARDANDO_PAGAMENTO\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Sem autenticação",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\",()=>pm.expect(pm.response.code).to.eql(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Cliente de terceiro",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{outroToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.expect(pm.response.code).to.eql(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Salto de estado inválido",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"PRONTO\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.expect(pm.response.code).to.eql(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Aprovar pagamento",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-pag-aprovado"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}",
+            "pagamentos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"cenario\":\"APROVAR\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "if(pm.response.code<300)pm.environment.set(\"pagamentoId\",pm.response.json().pagamentoId);pm.test(\"Pagamento aprovado e pedido confirmado\",()=>{let j=pm.response.json();pm.expect(j.statusPagamento).to.eql(\"APROVADO\");pm.expect(j.statusPedido).to.eql(\"CONFIRMADO\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Replay de pagamento",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-pag-aprovado"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}",
+            "pagamentos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"cenario\":\"APROVAR\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Mesmo pagamento\",()=>pm.expect(pm.response.json().pagamentoId).to.eql(pm.environment.get(\"pagamentoId\")));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Chave com conteúdo diferente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-pag-aprovado"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}",
+            "pagamentos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"cenario\":\"RECUSAR\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.expect(pm.response.code).to.eql(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Avançar EM_PREPARO",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"EM_PREPARO\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Estado EM_PREPARO\",()=>pm.expect(pm.response.json().status).to.eql(\"EM_PREPARO\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Avançar PRONTO",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"PRONTO\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Estado PRONTO\",()=>pm.expect(pm.response.json().status).to.eql(\"PRONTO\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Avançar ENTREGUE",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoAprovado}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"ENTREGUE\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Estado ENTREGUE\",()=>pm.expect(pm.response.json().status).to.eql(\"ENTREGUE\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Estoque após aprovação",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "estoque"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Baixa física e reserva\",()=>{let j=pm.response.json().content.find(x=>x.produtoId===pm.environment.get(\"produtoId\"));pm.expect(j.quantidadeFisica).to.eql(8);pm.expect(j.quantidadeReservada).to.eql(0);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Pedido para recusa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-pedido-recusado"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":2}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "if(pm.response.code<300)pm.environment.set(\"pedidoRecusado\",pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 Estoque reservado antes da recusa",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "estoque"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Físico 8, reservado 2\",()=>{let j=pm.response.json().content.find(x=>x.produtoId===pm.environment.get(\"produtoId\"));pm.expect(j.quantidadeFisica).to.eql(8);pm.expect(j.quantidadeReservada).to.eql(2);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 Recusar pagamento",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-pag-recusado"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoRecusado}}/pagamentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoRecusado}}",
+            "pagamentos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"cenario\":\"RECUSAR\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+              "pm.test(\"Recusa cancela pedido\",()=>{let j=pm.response.json();pm.expect(j.statusPagamento).to.eql(\"RECUSADO\");pm.expect(j.statusPedido).to.eql(\"CANCELADO\");pm.expect(j.motivo).to.eql(\"RECUSA_SIMULADA\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 Estoque liberado após recusa",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "estoque"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+              "pm.test(\"Físico 8, reservado 0\",()=>{let j=pm.response.json().content.find(x=>x.produtoId===pm.environment.get(\"produtoId\"));pm.expect(j.quantidadeFisica).to.eql(8);pm.expect(j.quantidadeReservada).to.eql(0);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 Estoque insuficiente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-insuficiente"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":99}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.expect(pm.response.code).to.eql(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 Canal inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-canal"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"INVALIDO\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":2}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.expect(pm.response.code).to.eql(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29 Cliente não altera estoque",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{runId}}-negado"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque/movimentacoes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "unidades",
+            "{{unidadeId}}",
+            "estoque",
+            "movimentacoes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"produtoId\":\"{{produtoId}}\",\"tipo\":\"ENTRADA\",\"quantidade\":1,\"motivo\":\"Negado\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.expect(pm.response.code).to.eql(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30 Campo obrigatório ausente",
+      "request": {"method":"POST","header":[{"key":"Content-Type","value":"application/json"},{"key":"Idempotency-Key","value":"{{runId}}-ausente"},{"key":"Authorization","value":"Bearer {{clienteToken}}"}],"url":{"raw":"{{baseUrl}}/api/v1/pedidos","host":["{{baseUrl}}"],"path":["api","v1","pedidos"]},"body":{"mode":"raw","raw":"{\"unidadeId\":\"{{unidadeId}}\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":1}]}","options":{"raw":{"language":"json"}}}},
+      "event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('HTTP 422 campo obrigatório',()=>pm.expect(pm.response.code).to.eql(422));","pm.test('Erro padronizado',()=>pm.expect(pm.response.json().error).to.eql('validation_error')); "]}}]
+    },
+    {
+      "name": "31 Produto inexistente",
+      "request": {"method":"POST","header":[{"key":"Content-Type","value":"application/json"},{"key":"Idempotency-Key","value":"{{runId}}-produto-inexistente"},{"key":"Authorization","value":"Bearer {{clienteToken}}"}],"url":{"raw":"{{baseUrl}}/api/v1/pedidos","host":["{{baseUrl}}"],"path":["api","v1","pedidos"]},"body":{"mode":"raw","raw":"{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"00000000-0000-4000-8000-000000000010\",\"quantidade\":1}]}","options":{"raw":{"language":"json"}}}},
+      "event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('HTTP 404 produto inexistente',()=>pm.expect(pm.response.code).to.eql(404));"]}}]
+    },
+    {
+      "name": "32 Unidade inexistente",
+      "request": {"method":"POST","header":[{"key":"Content-Type","value":"application/json"},{"key":"Idempotency-Key","value":"{{runId}}-unidade-inexistente"},{"key":"Authorization","value":"Bearer {{clienteToken}}"}],"url":{"raw":"{{baseUrl}}/api/v1/pedidos","host":["{{baseUrl}}"],"path":["api","v1","pedidos"]},"body":{"mode":"raw","raw":"{\"unidadeId\":\"00000000-0000-4000-8000-000000000011\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":1}]}","options":{"raw":{"language":"json"}}}},
+      "event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('HTTP 404 unidade inexistente',()=>pm.expect(pm.response.code).to.eql(404));"]}}]
+    }
+  ]
+}

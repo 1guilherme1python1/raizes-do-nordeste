@@ -140,4 +140,5 @@ public class PedidoEntity extends AuditableEntity {
     public void configurarRequisicao(String requisicaoHash) { this.requisicaoHash = requisicaoHash; }
     public void cancelar() { this.status = StatusPedido.CANCELADO; }
     public void expirar() { this.status = StatusPedido.EXPIRADO; }
+    public void alterarStatus(StatusPedido novo) { this.status = novo; }
 }

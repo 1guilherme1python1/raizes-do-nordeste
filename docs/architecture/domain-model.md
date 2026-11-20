@@ -2,11 +2,14 @@
 
 ## Visão geral
 
-O modelo cobre cadastro, vínculos operacionais, catálogo, estoque e ciclo inicial do pedido. Pagamento continua somente modelado.
+O modelo cobre cadastro, vínculos operacionais, catálogo, estoque, pedidos e pagamento mock síncrono; não há pagamento real.
 
 - [Diagrama entidade-relacionamento — fonte editável](diagrams/domain-erd.mmd) · [visual SVG](diagrams/domain-erd.svg)
 - [Diagrama de classes de domínio — fonte editável](diagrams/domain-classes.mmd) · [visual SVG](diagrams/domain-classes.svg)
 - [Sequência de criação e liberação — fonte editável](diagrams/order-reservation-sequence.mmd) · [visual SVG](diagrams/order-reservation-sequence.svg)
+- [Casos de uso — fonte editável](diagrams/use-cases.mmd) · [visual SVG](diagrams/use-cases.svg)
+
+O detalhe das restrições V1–V7 e do fluxo crítico está na [conferência TASK-011](../task-011-conferencia.md).
 
 ## Entidades e integridade
 
@@ -25,15 +28,15 @@ O modelo cobre cadastro, vínculos operacionais, catálogo, estoque e ciclo inic
 
 ## Estados
 
-Os estados persistíveis incluem `AGUARDANDO_PAGAMENTO`, `CANCELADO` e `EXPIRADO`, além dos estados posteriores já preparados. A TASK-007 implementa somente as transições do estado inicial para cancelado ou expirado. A sequência nominal futura é:
+Os estados persistíveis incluem `AGUARDANDO_PAGAMENTO`, `CANCELADO`, `EXPIRADO` e os estados operacionais. A sequência implementada após pagamento aprovado é:
 
 `AGUARDANDO_PAGAMENTO → CONFIRMADO → EM_PREPARO → PRONTO → ENTREGUE`
 
-`CANCELADO` e `EXPIRADO` são terminais nesta versão. Confirmações tardias devem ser rejeitadas quando pagamentos forem implementados.
+`CANCELADO` e `EXPIRADO` são terminais nesta versão; pagamento após vencimento não confirma o pedido.
 
-Cada tentativa de pagamento começa `PENDENTE` e termina em `APROVADO` ou `RECUSADO`. Estados finais não retornam a `PENDENTE`; uma repetição cria outro `Pagamento` com número de tentativa superior. O modelo permite isso, mas não decide quantas tentativas são aceitas nem seu efeito automático sobre pedido e reserva.
+O schema suporta estado `PENDENTE` e múltiplas tentativas históricas, mas o fluxo mock grava resultado síncrono `APROVADO` ou `RECUSADO` e aceita uma única tentativa efetiva por pedido. Replay da mesma chave retorna o pagamento anterior.
 
-Uma futura recusa de pagamento ainda exige decisão. Hoje o abandono após o prazo configurado e o cancelamento liberam a reserva na mesma transação da mudança de estado.
+Recusa, abandono após o prazo e cancelamento liberam a reserva na mesma transação da mudança de estado.
 
 ## Relações operacionais
 
@@ -45,8 +48,8 @@ A disponibilidade é `quantidade_fisica - quantidade_reservada`. A API de estoqu
 
 ## Contratos internos de pedidos
 
-O estoque expõe reserva e liberação transacionais identificadas por pedido/item. Reserva aumenta somente `quantidade_reservada`; liberação a reduz. A confirmação/baixa física pertence à futura integração de pagamento.
+O estoque expõe reserva, liberação e baixa transacionais identificadas por pedido/item. Reserva aumenta somente `quantidade_reservada`; liberação a reduz; aprovação mock baixa físico e reservado.
 
 ## Limites intencionais
 
-Não foram modelados papéis, credenciais, endereço, categoria, promoção, entrega, estorno ou dados de adquirente. A ausência evita fixar requisitos que ainda não foram aprovados. As questões funcionais restantes estão em [mvp.md](mvp.md).
+Papéis e credenciais existem; endereço, categoria, promoção, entrega logística, estorno e dados de adquirente não foram modelados. As questões restantes estão em [mvp.md](mvp.md).
