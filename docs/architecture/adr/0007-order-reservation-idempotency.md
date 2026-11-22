@@ -17,4 +17,4 @@ Cancelamento e expiração bloqueiam o pedido, revalidam o estado e liberam a re
 - não há reserva parcial quando qualquer item falha;
 - concorrência é protegida por versão do estoque e unicidade persistente;
 - múltiplas instâncias podem executar o scheduler sem liberar duas vezes;
-- a TASK-007 não confirma pagamento nem reduz o saldo físico.
+- a criação do pedido apenas reserva o saldo; a baixa definitiva do estoque físico ocorre após a confirmação do pagamento.
