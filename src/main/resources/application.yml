@@ -31,6 +31,7 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+  default-flat-param-object: true
 
 app:
   security:
