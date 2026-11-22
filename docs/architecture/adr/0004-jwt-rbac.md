@@ -1,6 +1,6 @@
 # ADR-0004 — JWT e RBAC
 
-- Status: Aceita, substituída parcialmente pela decisão da TASK-005
+- Status: Aceita
 - Data: 2026-11-07
 
 ## Contexto
@@ -13,7 +13,7 @@ Usar access token JWT stateless de 30 minutos, assinado com HS256 e segredo exte
 
 ## Justificativa
 
-JWT curto permite validação stateless das requisições e RBAC expressa responsabilidades estáveis. HS256 foi determinado pela TASK-005, substituindo a proposta assimétrica inicial para este estágio do projeto.
+JWT curto permite validação stateless das requisições e RBAC expressa responsabilidades estáveis. O algoritmo HS256 foi adotado para simplificar a infraestrutura e garantir alta performance na assinatura e validação de tokens.
 
 ## Consequências
 
