@@ -18,9 +18,17 @@ import br.com.raizesdonordeste.shared.application.ConflitoException;
 import br.com.raizesdonordeste.shared.application.RecursoNaoEncontradoException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.data.mapping.PropertyReferenceException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    ResponseEntity<ApiError> propertyReference(PropertyReferenceException exception, HttpServletRequest request) {
+        return response(HttpStatus.BAD_REQUEST, "invalid_sort",
+                "Propriedade de ordenação inválida: " + exception.getPropertyName(),
+                List.of(exception.getMessage()), request);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> validation(MethodArgumentNotValidException exception, HttpServletRequest request) {
