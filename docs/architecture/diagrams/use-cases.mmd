@@ -1,31 +1,26 @@
 flowchart LR
-    cliente[Cliente] --- registro[Registrar-se e autenticar-se]
+    cliente["Cliente (App/Web/Totem)"] --- registro[Registrar-se e autenticar-se]
     cliente --- cardapio[Consultar cardápio público]
     cliente --- criar[Criar e acompanhar pedido próprio]
-    cliente --- pagar[Solicitar pagamento mock]
+    cliente --- pagar[Solicitar e simular pagamento]
     cliente --- cancelar[Cancelar pedido pendente]
-    atendente[Atendente vinculado] --- criar
+    atendente["Atendente (Balcão)"] --- criar
     atendente --- pagar
     atendente --- cancelar
     atendente --- entregar[Marcar entregue]
-    cozinha[Cozinha vinculada] --- consulta[Consultar pedido da unidade]
+    cozinha[Cozinha] --- consulta[Consultar pedido da unidade]
     cozinha --- preparo[Iniciar preparo e marcar pronto]
-    gerente[Gerente vinculado] --- consulta
+    gerente["Gerente / Administrador"] --- consulta
     gerente --- criar
     gerente --- pagar
     gerente --- cancelar
     gerente --- preparo
     gerente --- entregar
     gerente --- oferta[Gerir oferta e estoque da unidade]
-    admin[Administrador] --- oferta
-    admin --- criar
-    admin --- pagar
-    admin --- cancelar
-    admin --- preparo
-    admin --- entregar
-    admin --- administracao[Gerir usuários internos e vínculos]
+    gerente --- administracao[Gerir usuários internos e vínculos]
+    gateway["Sistemas Externos de Pagamento (Gateway)"] --- pagar
     sistema[Processador agendado] --- expirar[Expirar reserva vencida]
     cliente -. proposta .-> fidelidade[Adesão, saldo e resgate de pontos]
-    admin -. proposta .-> campanha[Campanhas segmentadas]
+    gerente -. proposta .-> campanha[Campanhas segmentadas]
     classDef proposta fill:#fff2cc,stroke:#a66,stroke-dasharray: 5 5
     class fidelidade,campanha proposta
