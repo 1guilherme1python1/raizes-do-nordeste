@@ -5,4 +5,8 @@
 target/
 *.log
 .DS_Store
+__pycache__/
+*.pyc
+docs/generate_report.py
+docs/referencias/
 
