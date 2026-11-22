@@ -2,6 +2,7 @@ package br.com.raizesdonordeste.catalogo.api;
 import java.net.URI; import java.util.UUID;
 import br.com.raizesdonordeste.catalogo.application.CatalogoService;
 import io.swagger.v3.oas.annotations.Operation; import io.swagger.v3.oas.annotations.security.SecurityRequirement; import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid; import org.springframework.data.domain.*; import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.responses.ApiResponse; import io.swagger.v3.oas.annotations.media.*; import br.com.raizesdonordeste.shared.api.ApiError;
@@ -13,7 +14,7 @@ public class ProdutoController{
  public ResponseEntity<ProdutoResponse> criar(@Valid @RequestBody CriarProdutoRequest r){var p=service.criarProduto(r.sku(),r.nome(),r.descricao());return ResponseEntity.created(URI.create("/api/v1/produtos/"+p.id())).body(ProdutoResponse.from(p));}
  @GetMapping @Operation(summary="Lista produtos",security=@SecurityRequirement(name="bearerAuth"))
  @ApiResponse(responseCode="200",description="Página de produtos") @ApiResponse(responseCode="401",description="JWT ausente ou inválido",content=@Content(schema=@Schema(implementation=ApiError.class)))
- public Page<ProdutoResponse> listar(@RequestParam(required=false)Boolean ativo,@RequestParam(required=false)String termo,Pageable pageable){return service.listarProdutos(ativo,termo,pageable).map(ProdutoResponse::from);}
+ public Page<ProdutoResponse> listar(@RequestParam(required=false)Boolean ativo,@RequestParam(required=false)String termo,@ParameterObject Pageable pageable){return service.listarProdutos(ativo,termo,pageable).map(ProdutoResponse::from);}
  @GetMapping("/{id}") @Operation(summary="Consulta produto",security=@SecurityRequirement(name="bearerAuth")) @ApiResponse(responseCode="200",description="Produto encontrado") @ApiResponse(responseCode="404",description="Produto inexistente",content=@Content(schema=@Schema(implementation=ApiError.class))) public ProdutoResponse buscar(@PathVariable UUID id){return ProdutoResponse.from(service.buscarProduto(id));}
  @PatchMapping("/{id}") @PreAuthorize("hasRole('ADMIN')") @Operation(summary="Atualiza produto global",security=@SecurityRequirement(name="bearerAuth"))
  @ApiResponse(responseCode="200",description="Produto atualizado") @ApiResponse(responseCode="403",description="Somente ADMIN",content=@Content(schema=@Schema(implementation=ApiError.class))) @ApiResponse(responseCode="404",description="Produto inexistente",content=@Content(schema=@Schema(implementation=ApiError.class)))
