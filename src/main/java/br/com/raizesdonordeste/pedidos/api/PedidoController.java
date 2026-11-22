@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springframework.data.domain.*;
 import org.springframework.data.web.PageableDefault;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +34,7 @@ public class PedidoController {
         return ResponseEntity.status(r.repetida()?HttpStatus.OK:HttpStatus.CREATED).body(response(r.pedido()));
     }
     @GetMapping @Operation(summary="Lista pedidos respeitando o escopo do usuário",description="CLIENTE vê os próprios; funcionários e COZINHA veem unidades vinculadas; ADMIN possui escopo global.")
-    public Page<PedidoResponse> listar(@RequestParam(required=false)UUID unidadeId,@RequestParam(required=false)StatusPedido status,@RequestParam(required=false)CanalPedido canalPedido,@PageableDefault(size=20)Pageable pageable,JwtAuthenticationToken auth){return service.listar(unidadeId,status,canalPedido,ator(auth),pageable).map(this::response);}
+    public Page<PedidoResponse> listar(@RequestParam(required=false)UUID unidadeId,@RequestParam(required=false)StatusPedido status,@RequestParam(required=false)CanalPedido canalPedido,@ParameterObject @PageableDefault(size=20)Pageable pageable,JwtAuthenticationToken auth){return service.listar(unidadeId,status,canalPedido,ator(auth),pageable).map(this::response);}
     @GetMapping("/{id}") @Operation(summary="Consulta um pedido") @ApiResponse(responseCode="200",description="Pedido encontrado") @ApiResponse(responseCode="401",description="JWT ausente ou inválido",content=@Content(schema=@Schema(implementation=br.com.raizesdonordeste.shared.api.ApiError.class))) @ApiResponse(responseCode="403",description="Fora do escopo",content=@Content(schema=@Schema(implementation=br.com.raizesdonordeste.shared.api.ApiError.class))) @ApiResponse(responseCode="404",description="Pedido inexistente",content=@Content(schema=@Schema(implementation=br.com.raizesdonordeste.shared.api.ApiError.class)))
     public PedidoResponse buscar(@PathVariable UUID id,JwtAuthenticationToken auth){return response(service.buscar(id,ator(auth)));}
     @PostMapping("/{id}/cancelamento") @Operation(summary="Cancela pedido pendente e libera a reserva",description="Idempotente quando o pedido já está CANCELADO; outros estados terminais retornam 409.")
