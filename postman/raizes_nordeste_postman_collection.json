@@ -1,0 +1,2835 @@
+{
+  "info": {
+    "name": "Raízes do Nordeste — Coleção de Testes de API (UNINTER)",
+    "description": "Coleção oficial de testes de API do projeto Raízes do Nordeste para entrega da trilha Back-End UNINTER (RU: 4697578). Contém 34 requisições e 48 asserções automatizadas cobrindo autenticação JWT, CRUD de produtos, estoque com idempotência, ciclo completo de pedidos, pagamento mock e tratamento de erros padronizados.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get(\"runId\")) { pm.environment.set(\"runId\", Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Autenticação, tokens JWT, health check e cadastro de usuários.",
+      "item": [
+        {
+          "name": "01 Health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('runId', Date.now().toString(36) + Math.random().toString(36).slice(2, 8));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Aplicação saudável\",()=>pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "01 Health - Retorno 200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/actuator/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"UP\",\n  \"components\": {\n    \"db\": {\n      \"status\": \"UP\",\n      \"details\": {\n        \"database\": \"PostgreSQL\"\n      }\n    },\n    \"diskSpace\": {\n      \"status\": \"UP\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "02 Login administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminEmail}}\",\"senha\":\"{{adminPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "if(pm.response.code<300)pm.environment.set(\"adminToken\",pm.response.json().accessToken);if(pm.response.code<300)pm.environment.set(\"adminId\",pm.response.json().usuario.id);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "02 Login administrador - Retorno 200",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/auth/login"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmODFkNGZhZS03ZGVjLTExZDEtYWNiYi0wMDA4Yzc0MTgzYzkiLCJyb2xlcyI6WyJBRE1JTiJdLCJpc3MiOiJyYWl6ZXMtZG8tbm9yZGVzdGUtYXBpIiwiYXVkIjoicmFpemVzLWRvLW5vcmRlc3RlLWNsaWVudHMiLCJpYXQiOjE3MzIxNTM2MDAsImV4cCI6MTczMjE1NTQwMH0.signature\",\n  \"tokenType\": \"Bearer\",\n  \"expiresAt\": \"2026-11-21T18:00:00Z\",\n  \"usuario\": {\n    \"id\": \"f81d4fae-7dec-11d1-acbb-0008c74183c9\",\n    \"codigo\": \"ADM-001\",\n    \"nomeExibicao\": \"Administrador Geral\",\n    \"email\": \"admin@teste.com\",\n    \"perfil\": \"ADMIN\",\n    \"ativo\": true,\n    \"criadoEm\": \"2026-11-20T10:00:00Z\",\n    \"atualizadoEm\": \"2026-11-20T10:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "03 Cadastrar cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usuarios/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeExibicao\":\"Cliente sintético\",\"email\":\"cliente-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "if(pm.response.code<300)pm.environment.set(\"clienteId\",pm.response.json().id);pm.test(\"Sem senha ou hash\",()=>{pm.expect(pm.response.json()).not.to.have.property(\"senha\");pm.expect(pm.response.json()).not.to.have.property(\"senhaHash\");});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "03 Cadastrar cliente - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/usuarios/registro"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"codigo\": \"CLI-202601\",\n  \"nomeExibicao\": \"Consumidor Exemplo\",\n  \"email\": \"cliente@teste.com\",\n  \"perfil\": \"CLIENTE\",\n  \"ativo\": true,\n  \"criadoEm\": \"2026-11-21T17:30:00Z\",\n  \"atualizadoEm\": \"2026-11-21T17:30:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "04 Login cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"cliente-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "if(pm.response.code<300)pm.environment.set(\"clienteToken\",pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "04 Login cliente - Retorno 200",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/auth/login"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTdhOGItOWMwZC0xZTJmM2E0YjVjNmQiLCJyb2xlcyI6WyJDTElFTlRFIl0sImlhdCI6MTczMjE1MzYwMCwiZXhwIjoxNzMyMTU1NDAwfQ.signature\",\n  \"tokenType\": \"Bearer\",\n  \"expiresAt\": \"2026-11-21T18:00:00Z\",\n  \"usuario\": {\n    \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"codigo\": \"CLI-202601\",\n    \"nomeExibicao\": \"Consumidor Exemplo\",\n    \"email\": \"cliente@teste.com\",\n    \"perfil\": \"CLIENTE\",\n    \"ativo\": true,\n    \"criadoEm\": \"2026-11-21T17:30:00Z\",\n    \"atualizadoEm\": \"2026-11-21T17:30:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "05 Cadastrar outro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usuarios/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeExibicao\":\"Outro cliente sintético\",\"email\":\"outro-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "05 Cadastrar outro cliente - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/usuarios/registro"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"codigo\": \"CLI-202601\",\n  \"nomeExibicao\": \"Consumidor Exemplo\",\n  \"email\": \"cliente@teste.com\",\n  \"perfil\": \"CLIENTE\",\n  \"ativo\": true,\n  \"criadoEm\": \"2026-11-21T17:30:00Z\",\n  \"atualizadoEm\": \"2026-11-21T17:30:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "06 Login outro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"outro-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "if(pm.response.code<300)pm.environment.set(\"outroToken\",pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "06 Login outro cliente - Retorno 200",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/auth/login"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTdhOGItOWMwZC0xZTJmM2E0YjVjNmQiLCJyb2xlcyI6WyJDTElFTlRFIl0sImlhdCI6MTczMjE1MzYwMCwiZXhwIjoxNzMyMTU1NDAwfQ.signature\",\n  \"tokenType\": \"Bearer\",\n  \"expiresAt\": \"2026-11-21T18:00:00Z\",\n  \"usuario\": {\n    \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"codigo\": \"CLI-202601\",\n    \"nomeExibicao\": \"Consumidor Exemplo\",\n    \"email\": \"cliente@teste.com\",\n    \"perfil\": \"CLIENTE\",\n    \"ativo\": true,\n    \"criadoEm\": \"2026-11-21T17:30:00Z\",\n    \"atualizadoEm\": \"2026-11-21T17:30:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "07 Cadastrar funcionário auditado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeExibicao\":\"Atendente sintético\",\"email\":\"atendente-{{runId}}@example.invalid\",\"senha\":\"{{testPassword}}\",\"perfil\":\"ATENDENTE\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "if(pm.response.code<300)pm.environment.set(\"funcionarioId\",pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "07 Cadastrar funcionário auditado - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/usuarios"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n  \"codigo\": \"OP-RECIFE-01\",\n  \"nomeExibicao\": \"Operador de Caixa Recife\",\n  \"email\": \"operador.recife@raizes.com.br\",\n  \"perfil\": \"ATENDENTE\",\n  \"ativo\": true,\n  \"criadoEm\": \"2026-11-21T17:31:00Z\",\n  \"atualizadoEm\": \"2026-11-21T17:31:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Produtos",
+      "description": "Gestão de unidades, vínculos de funcionários, produtos e ofertas locais.",
+      "item": [
+        {
+          "name": "08 Criar unidade",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigo\":\"UND-{{runId}}\",\"nome\":\"Unidade sintética\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "if(pm.response.code<300)pm.environment.set(\"unidadeId\",pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "08 Criar unidade - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"codigo\": \"RECIFE-BOA-VIAGEM\",\n  \"nome\": \"Unidade Recife Boa Viagem\",\n  \"ativa\": true,\n  \"criadoEm\": \"2026-11-21T17:32:00Z\",\n  \"atualizadoEm\": \"2026-11-21T17:32:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "09 Vincular funcionário auditado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/usuarios/{{funcionarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "usuarios",
+                "{{funcionarioId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\",()=>pm.expect(pm.response.code).to.eql(204));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "09 Vincular funcionário auditado - Retorno 204",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/usuarios/{{funcionarioId}}"
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "10 Repetir vínculo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/usuarios/{{funcionarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "usuarios",
+                "{{funcionarioId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\",()=>pm.expect(pm.response.code).to.eql(204));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "10 Repetir vínculo - Retorno 204",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/usuarios/{{funcionarioId}}"
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "11 Criar produto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/produtos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "produtos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sku\":\"SKU-{{runId}}\",\"nome\":\"Produto sintético\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "if(pm.response.code<300)pm.environment.set(\"produtoId\",pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "11 Criar produto - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/produtos"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90\",\n  \"sku\": \"BAIAO-DOIS-ESP-01\",\n  \"nome\": \"Bai\\u00e3o de Dois Ra\\u00edzes Especial\",\n  \"descricao\": \"Arroz da terra, feij\\u00e3o fradinho, queijo coalho e carne de sol desfiada\",\n  \"ativo\": true,\n  \"criadoEm\": \"2026-11-21T17:33:00Z\",\n  \"atualizadoEm\": \"2026-11-21T17:33:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "12 Configurar oferta",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/produtos/{{produtoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "produtos",
+                "{{produtoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"preco\":12.5,\"disponivel\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "12 Configurar oferta - Retorno 200",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/produtos/{{produtoId}}"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f90a1\",\n  \"produtoId\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90\",\n  \"unidadeId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"preco\": 38.9,\n  \"disponivel\": true\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Estoque",
+      "description": "Entrada e movimentação de estoque com chave de idempotência.",
+      "item": [
+        {
+          "name": "13 Entrada de estoque",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-estoque"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque/movimentacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "estoque",
+                "movimentacoes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"produtoId\":\"{{produtoId}}\",\"tipo\":\"ENTRADA\",\"quantidade\":10,\"motivo\":\"Carga sintética\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test(\"Físico 10, reservado 0\",()=>{let j=pm.response.json();pm.expect(j.quantidadeFisicaResultante).to.eql(10);pm.expect(j.quantidadeReservadaResultante).to.eql(0);});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "13 Entrada de estoque - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque/movimentacoes"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f90a1b2\",\n  \"estoqueId\": \"e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f90a1\",\n  \"unidadeId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"responsavelUsuarioId\": \"f81d4fae-7dec-11d1-acbb-0008c74183c9\",\n  \"tipo\": \"ENTRADA\",\n  \"quantidade\": 10,\n  \"quantidadeFisicaResultante\": 10,\n  \"quantidadeReservadaResultante\": 0,\n  \"quantidadeDisponivelResultante\": 10,\n  \"motivo\": \"Carga inicial de estoque para testes acad\\u00eamicos\",\n  \"criadoEm\": \"2026-11-21T17:34:00Z\",\n  \"repetida\": false\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pedidos",
+      "description": "Criação de pedidos com itens válidos e validações de acesso ao pedido.",
+      "item": [
+        {
+          "name": "14 Pedido para aprovação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-pedido-aprovado"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":2}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "if(pm.response.code<300)pm.environment.set(\"pedidoAprovado\",pm.response.json().id);pm.test(\"Total e estado\",()=>{let j=pm.response.json();pm.expect(j.valorTotal).to.eql(25);pm.expect(j.status).to.eql(\"AGUARDANDO_PAGAMENTO\");});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "14 Pedido para aprovação - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f60\",\n  \"unidadeId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"clienteId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"criadoPorUsuarioId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"canalPedido\": \"APP\",\n  \"status\": \"AGUARDANDO_PAGAMENTO\",\n  \"formaPagamento\": \"MOCK_GATEWAY\",\n  \"valorTotal\": 77.8,\n  \"moeda\": \"BRL\",\n  \"reservaExpiraEm\": \"2026-11-21T17:50:00Z\",\n  \"itens\": [\n    {\n      \"id\": \"01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f61\",\n      \"produtoId\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90\",\n      \"quantidade\": 2,\n      \"precoUnitario\": 38.9,\n      \"subtotal\": 77.8\n    }\n  ],\n  \"criadoEm\": \"2026-11-21T17:35:00Z\",\n  \"atualizadoEm\": \"2026-11-21T17:35:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "15 Sem autenticação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\",()=>pm.expect(pm.response.code).to.eql(401));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "15 Sem autenticação - Retorno 401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}"
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Autentica\\u00e7\\u00e3o necess\\u00e1ria ou token inv\\u00e1lido\",\n  \"details\": [\n    \"Cabe\\u00e7alho Authorization ausente ou token expirado\"\n  ],\n  \"timestamp\": \"2026-11-21T17:35:10Z\",\n  \"path\": \"/api/v1/pedidos/01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f60\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "16 Cliente de terceiro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{outroToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\",()=>pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "16 Cliente de terceiro - Retorno 403",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"Acesso negado: o perfil autenticado n\\u00e3o possui permiss\\u00e3o para acessar este recurso\",\n  \"details\": [\n    \"Acesso restrito ao propriet\\u00e1rio do pedido ou perfis administrativos\"\n  ],\n  \"timestamp\": \"2026-11-21T17:35:20Z\",\n  \"path\": \"/api/v1/pedidos/01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f60\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "17 Salto de estado inválido",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"PRONTO\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.expect(pm.response.code).to.eql(409));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "17 Salto de estado inválido - Retorno 409",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status"
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"conflict\",\n  \"message\": \"Transi\\u00e7\\u00e3o de estado inv\\u00e1lida: pedido em AGUARDANDO_PAGAMENTO n\\u00e3o pode avan\\u00e7ar diretamente para PRONTO\",\n  \"details\": [\n    \"Transi\\u00e7\\u00e3o permitida somente ap\\u00f3s CONFIRMADO\"\n  ],\n  \"timestamp\": \"2026-11-21T17:35:30Z\",\n  \"path\": \"/api/v1/pedidos/01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f60/status\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pagamento",
+      "description": "Simulação de pagamento mock (aprovação e recusa), replay idempotente e avanço de status operacional.",
+      "item": [
+        {
+          "name": "18 Aprovar pagamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-pag-aprovado"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}",
+                "pagamentos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cenario\":\"APROVAR\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "if(pm.response.code<300)pm.environment.set(\"pagamentoId\",pm.response.json().pagamentoId);pm.test(\"Pagamento aprovado e pedido confirmado\",()=>{let j=pm.response.json();pm.expect(j.statusPagamento).to.eql(\"APROVADO\");pm.expect(j.statusPedido).to.eql(\"CONFIRMADO\");});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "18 Aprovar pagamento - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"pagamentoId\": \"8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d\",\n  \"statusPagamento\": \"APROVADO\",\n  \"statusPedido\": \"CONFIRMADO\",\n  \"motivo\": null,\n  \"repetida\": false,\n  \"reservaExpirada\": false\n}"
+            }
+          ]
+        },
+        {
+          "name": "19 Replay de pagamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-pag-aprovado"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}",
+                "pagamentos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cenario\":\"APROVAR\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Mesmo pagamento\",()=>pm.expect(pm.response.json().pagamentoId).to.eql(pm.environment.get(\"pagamentoId\")));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "19 Replay de pagamento - Retorno 200",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"pagamentoId\": \"8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d\",\n  \"statusPagamento\": \"APROVADO\",\n  \"statusPedido\": \"CONFIRMADO\",\n  \"motivo\": null,\n  \"repetida\": true,\n  \"reservaExpirada\": false\n}"
+            }
+          ]
+        },
+        {
+          "name": "20 Chave com conteúdo diferente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-pag-aprovado"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}",
+                "pagamentos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cenario\":\"RECUSAR\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.expect(pm.response.code).to.eql(409));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "20 Chave com conteúdo diferente - Retorno 409",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/pagamentos"
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"conflict\",\n  \"message\": \"Chave de idempot\\u00eancia j\\u00e1 utilizada com payload ou par\\u00e2metros divergentes\",\n  \"details\": [\n    \"IDEMPOTENCY_KEY_PAYLOAD_MISMATCH\"\n  ],\n  \"timestamp\": \"2026-11-21T17:35:50Z\",\n  \"path\": \"/api/v1/pedidos/01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f60/pagamentos\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "21 Avançar EM_PREPARO",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"EM_PREPARO\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Estado EM_PREPARO\",()=>pm.expect(pm.response.json().status).to.eql(\"EM_PREPARO\"));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "21 Avançar EM_PREPARO - Retorno 200",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"EM_PREPARO\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "21 Avançar PRONTO",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"PRONTO\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Estado PRONTO\",()=>pm.expect(pm.response.json().status).to.eql(\"PRONTO\"));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "21 Avançar PRONTO - Retorno 200",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"PRONTO\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "21 Avançar ENTREGUE",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoAprovado}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"ENTREGUE\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Estado ENTREGUE\",()=>pm.expect(pm.response.json().status).to.eql(\"ENTREGUE\"));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "21 Avançar ENTREGUE - Retorno 200",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoAprovado}}/status"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"ENTREGUE\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "22 Estoque após aprovação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "estoque"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Baixa física e reserva\",()=>{let j=pm.response.json().content.find(x=>x.produtoId===pm.environment.get(\"produtoId\"));pm.expect(j.quantidadeFisica).to.eql(8);pm.expect(j.quantidadeReservada).to.eql(0);});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "22 Estoque após aprovação - Retorno 200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"produtoId\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90\",\n    \"sku\": \"BAIAO-DOIS-ESP-01\",\n    \"nome\": \"Bai\\u00e3o de Dois Ra\\u00edzes Especial\",\n    \"quantidadeFisica\": 8,\n    \"quantidadeReservada\": 0,\n    \"quantidadeDisponivel\": 8\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "23 Pedido para recusa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-pedido-recusado"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":2}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "if(pm.response.code<300)pm.environment.set(\"pedidoRecusado\",pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "23 Pedido para recusa - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f60\",\n  \"unidadeId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"clienteId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"criadoPorUsuarioId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"canalPedido\": \"APP\",\n  \"status\": \"AGUARDANDO_PAGAMENTO\",\n  \"formaPagamento\": \"MOCK_GATEWAY\",\n  \"valorTotal\": 77.8,\n  \"moeda\": \"BRL\",\n  \"reservaExpiraEm\": \"2026-11-21T17:50:00Z\",\n  \"itens\": [\n    {\n      \"id\": \"01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f61\",\n      \"produtoId\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90\",\n      \"quantidade\": 2,\n      \"precoUnitario\": 38.9,\n      \"subtotal\": 77.8\n    }\n  ],\n  \"criadoEm\": \"2026-11-21T17:35:00Z\",\n  \"atualizadoEm\": \"2026-11-21T17:35:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "24 Estoque reservado antes da recusa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "estoque"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Físico 8, reservado 2\",()=>{let j=pm.response.json().content.find(x=>x.produtoId===pm.environment.get(\"produtoId\"));pm.expect(j.quantidadeFisica).to.eql(8);pm.expect(j.quantidadeReservada).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "24 Estoque reservado antes da recusa - Retorno 200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"produtoId\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90\",\n    \"sku\": \"BAIAO-DOIS-ESP-01\",\n    \"nome\": \"Bai\\u00e3o de Dois Ra\\u00edzes Especial\",\n    \"quantidadeFisica\": 8,\n    \"quantidadeReservada\": 2,\n    \"quantidadeDisponivel\": 6\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "25 Recusar pagamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-pag-recusado"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoRecusado}}/pagamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "{{pedidoRecusado}}",
+                "pagamentos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cenario\":\"RECUSAR\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\",()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test(\"Recusa cancela pedido\",()=>{let j=pm.response.json();pm.expect(j.statusPagamento).to.eql(\"RECUSADO\");pm.expect(j.statusPedido).to.eql(\"CANCELADO\");pm.expect(j.motivo).to.eql(\"RECUSA_SIMULADA\");});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "25 Recusar pagamento - Retorno 201",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos/{{pedidoRecusado}}/pagamentos"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"pagamentoId\": \"9b0c1d2e-3f4a-5b6c-7d8e-9f0a1b2c3d4e\",\n  \"statusPagamento\": \"RECUSADO\",\n  \"statusPedido\": \"CANCELADO\",\n  \"motivo\": \"RECUSA_SIMULADA\",\n  \"repetida\": false,\n  \"reservaExpirada\": false\n}"
+            }
+          ]
+        },
+        {
+          "name": "26 Estoque liberado após recusa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "estoque"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test(\"Físico 8, reservado 0\",()=>{let j=pm.response.json().content.find(x=>x.produtoId===pm.environment.get(\"produtoId\"));pm.expect(j.quantidadeFisica).to.eql(8);pm.expect(j.quantidadeReservada).to.eql(0);});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "26 Estoque liberado após recusa - Retorno 200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"produtoId\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90\",\n    \"sku\": \"BAIAO-DOIS-ESP-01\",\n    \"nome\": \"Bai\\u00e3o de Dois Ra\\u00edzes Especial\",\n    \"quantidadeFisica\": 8,\n    \"quantidadeReservada\": 0,\n    \"quantidadeDisponivel\": 8\n  }\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Erros",
+      "description": "Cenários de erro e regras de negócio: estoque insuficiente (409), canal inválido (422), campos ausentes (422) e inexistência (404).",
+      "item": [
+        {
+          "name": "27 Estoque insuficiente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-insuficiente"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":99}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.expect(pm.response.code).to.eql(409));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "27 Estoque insuficiente - Retorno 409",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos"
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"ESTOQUE_INSUFICIENTE\",\n  \"message\": \"Saldo dispon\\u00edvel insuficiente para a reserva de estoque\",\n  \"details\": [\n    \"Produto BAIAO-DOIS-ESP-01: saldo dispon\\u00edvel 8, solicitado 50\"\n  ],\n  \"timestamp\": \"2026-11-21T17:36:10Z\",\n  \"path\": \"/api/v1/pedidos\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "28 Canal inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-canal"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"INVALIDO\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":2}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\",()=>pm.expect(pm.response.code).to.eql(400));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "28 Canal inválido - Retorno 422",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos"
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"validation_error\",\n  \"message\": \"Requisi\\u00e7\\u00e3o com falha de valida\\u00e7\\u00e3o\",\n  \"details\": [\n    {\n      \"field\": \"canalPedido\",\n      \"issue\": \"canal de atendimento inv\\u00e1lido\"\n    }\n  ],\n  \"timestamp\": \"2026-11-21T17:36:20Z\",\n  \"path\": \"/api/v1/pedidos\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "29 Cliente não altera estoque",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-negado"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque/movimentacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "unidades",
+                "{{unidadeId}}",
+                "estoque",
+                "movimentacoes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"produtoId\":\"{{produtoId}}\",\"tipo\":\"ENTRADA\",\"quantidade\":1,\"motivo\":\"Negado\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\",()=>pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "29 Cliente não altera estoque - Retorno 403",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/unidades/{{unidadeId}}/estoque/movimentacoes"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"Acesso negado: o perfil autenticado n\\u00e3o possui permiss\\u00e3o para acessar este recurso\",\n  \"details\": [\n    \"Acesso restrito ao propriet\\u00e1rio do pedido ou perfis administrativos\"\n  ],\n  \"timestamp\": \"2026-11-21T17:35:20Z\",\n  \"path\": \"/api/v1/pedidos/01934f8a-5b6c-7d8e-9f0a-1b2c3d4e5f60\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "30 Campo obrigatório ausente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-ausente"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":1}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422 campo obrigatório',()=>pm.expect(pm.response.code).to.eql(422));",
+                  "pm.test('Erro padronizado',()=>pm.expect(pm.response.json().error).to.eql('validation_error')); "
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "30 Campo obrigatório ausente - Retorno 422",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos"
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"validation_error\",\n  \"message\": \"Requisi\\u00e7\\u00e3o com falha de valida\\u00e7\\u00e3o\",\n  \"details\": [\n    {\n      \"field\": \"canalPedido\",\n      \"issue\": \"n\\u00e3o deve ser nulo\"\n    }\n  ],\n  \"timestamp\": \"2026-11-21T17:36:30Z\",\n  \"path\": \"/api/v1/pedidos\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "31 Produto inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-produto-inexistente"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"unidadeId\":\"{{unidadeId}}\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"00000000-0000-4000-8000-000000000010\",\"quantidade\":1}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404 produto inexistente',()=>pm.expect(pm.response.code).to.eql(404));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "31 Produto inexistente - Retorno 404",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Produto n\\u00e3o encontrado na base de dados\",\n  \"details\": [\n    \"ID informado n\\u00e3o corresponde a nenhum produto ativo\"\n  ],\n  \"timestamp\": \"2026-11-21T17:36:40Z\",\n  \"path\": \"/api/v1/pedidos\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "32 Unidade inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{runId}}-unidade-inexistente"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"unidadeId\":\"00000000-0000-4000-8000-000000000011\",\"canalPedido\":\"APP\",\"formaPagamento\":\"MOCK\",\"itens\":[{\"produtoId\":\"{{produtoId}}\",\"quantidade\":1}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404 unidade inexistente',()=>pm.expect(pm.response.code).to.eql(404));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "32 Unidade inexistente - Retorno 404",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-Id",
+                    "value": "req-acad-2026-4697578"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/v1/pedidos"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "req-acad-2026-4697578"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Unidade f\\u00edsica n\\u00e3o encontrada na rede\",\n  \"details\": [\n    \"ID informado n\\u00e3o corresponde a nenhuma filial cadastrada\"\n  ],\n  \"timestamp\": \"2026-11-21T17:36:50Z\",\n  \"path\": \"/api/v1/pedidos\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
