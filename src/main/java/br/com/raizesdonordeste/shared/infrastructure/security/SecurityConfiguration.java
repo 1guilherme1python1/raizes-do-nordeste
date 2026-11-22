@@ -46,6 +46,7 @@ public class SecurityConfiguration {
                 .formLogin(form -> form.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
+                                "/error",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/v3/api-docs/**",
