@@ -13,6 +13,7 @@ import br.com.raizesdonordeste.shared.api.ApiError;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +35,7 @@ public class UnidadeController {
     @GetMapping @Operation(summary="Lista unidades", security=@SecurityRequirement(name="bearerAuth"))
     @ApiResponse(responseCode="200",description="Página de unidades") @ApiResponse(responseCode="401",description="JWT ausente ou inválido",content=@Content(schema=@Schema(implementation=ApiError.class)))
     public Page<UnidadeResponse> listar(@RequestParam(required=false) Boolean ativa,
-            @RequestParam(required=false) String nome, Pageable pageable) {
+            @RequestParam(required=false) String nome, @ParameterObject Pageable pageable) {
         return service.listar(ativa,nome,pageable).map(UnidadeResponse::from);
     }
     @GetMapping("/{id}") @Operation(summary="Consulta unidade", security=@SecurityRequirement(name="bearerAuth"))
