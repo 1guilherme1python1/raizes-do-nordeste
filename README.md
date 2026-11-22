@@ -1,122 +1,192 @@
 # Raízes do Nordeste — Back-End
 
-Back-end do projeto acadêmico Raízes do Nordeste. A aplicação usa Java 21, Spring Boot, PostgreSQL e Maven, organizada como monólito modular por funcionalidade. Oferece JWT, unidades, catálogo, estoque auditável, pedidos multicanal e pagamento mock.
+Back-end do projeto acadêmico Raízes do Nordeste (UNINTER 2026). A aplicação utiliza **Java 21**, **Spring Boot 3.5.16**, **PostgreSQL 16** e **Maven**, organizada como monólito modular por funcionalidade. Oferece autenticação JWT, controle de acesso RBAC, gestão de unidades, catálogo local, estoque auditável com bloqueio concorrente, pedidos multicanal e pagamento simulado (*mock gateway*).
 
-## Pré-requisitos
+---
 
-Para o fluxo recomendado, basta ter:
+## Passo a Passo para Subir o Projeto (Guia Rápido)
 
-- Docker 24 ou superior;
-- Docker Compose v2 ou superior.
+Para colocar toda a solução no ar rapidamente, execute os 4 passos abaixo no terminal:
 
-JDK e Maven locais não são necessários. O build multi-stage e o Maven Wrapper executam essas ferramentas dentro do Docker.
+```bash
+# 1. Clone o repositório (caso ainda não esteja na pasta)
+git clone https://github.com/1guilherme1python1/raizes-do-nordeste.git
+cd raizes-do-nordeste
 
-## Configuração
+# 2. Crie o arquivo de ambiente a partir do exemplo
+cp .env.example .env
 
-Copie `.env.example` para `.env` e altere os valores locais:
+# 3. Gere e configure a chave obrigatória de JWT (Base64 com 256 bits)
+# No Linux / macOS / Git Bash:
+export NOVO_JWT_SECRET=$(openssl rand -base64 32)
+# Ou via Python:
+# export NOVO_JWT_SECRET=$(python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())")
 
+# Insira a chave gerada no .env (substituindo a linha JWT_SECRET=)
+sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${NOVO_JWT_SECRET}|" .env
+
+# 4. Inicie o banco e a aplicação via Docker Compose
+docker compose up --build -d
+```
+
+Verifique a saúde dos contêineres:
+```bash
+docker compose ps
+```
+Ambos os serviços (`database` e `application`) devem reportar o status `Up (healthy)`.
+
+---
+
+## 1. Requisitos do Sistema
+
+- **Docker:** Versão 24.0 ou superior;
+- **Docker Compose:** Versão v2 ou superior;
+- *(Opcional, apenas se for executar fora do Docker):* JDK 21 e Maven 3.9+.
+
+> **Nota:** Não é necessário ter Java ou Maven instalados no host para o fluxo padrão. O build multi-stage do Docker e o Maven Wrapper (`./mvnw`) executam tudo isoladamente dentro dos contêineres.
+
+---
+
+## 2. Instalação de Dependências
+
+- **Via Docker (Recomendado):** O Dockerfile multi-stage realiza a instalação automática de todas as dependências Maven durante o build (`docker compose up --build`).
+- **Localmente no Host (Opcional):**
+  ```bash
+  ./mvnw clean dependency:resolve
+  ```
+
+---
+
+## 3. Configuração de Variáveis de Ambiente (.env)
+
+Copie o `.env.example` para `.env`:
 ```bash
 cp .env.example .env
 ```
 
-O arquivo `.env` não deve ser versionado. As variáveis aceitas são:
-
-| Variável | Finalidade | Padrão de desenvolvimento |
+| Variável | Finalidade | Padrão / Obrigatório |
 |---|---|---|
-| `POSTGRES_DB` | Nome do banco | `raizes_nordeste` |
-| `POSTGRES_USER` | Usuário do banco | `raizes_app` |
-| `POSTGRES_PASSWORD` | Senha local | `local_development_only` |
+| `POSTGRES_DB` | Nome do banco de dados | `raizes_nordeste` |
+| `POSTGRES_USER` | Usuário da aplicação no banco | `raizes_app` |
+| `POSTGRES_PASSWORD` | Senha de desenvolvimento local | `local_development_only` |
 | `POSTGRES_PORT` | Porta publicada do PostgreSQL | `5432` |
-| `APP_PORT` | Porta publicada da aplicação | `8080` |
-| `JWT_SECRET` | Segredo HS256 em Base64, com pelo menos 256 bits | Obrigatório; sem padrão |
-| `JWT_ISSUER` | Emissor exigido no token | `raizes-do-nordeste-api` |
-| `JWT_AUDIENCE` | Audiência exigida no token | `raizes-do-nordeste-clients` |
-| `DEV_ADMIN_ENABLED` | Habilita bootstrap de ADMIN apenas no perfil `dev` | `false` |
-| `DEV_ADMIN_EMAIL` | E-mail do ADMIN opcional de desenvolvimento | vazio |
-| `DEV_ADMIN_PASSWORD` | Senha do ADMIN opcional de desenvolvimento | vazio |
-| `DEV_ADMIN_DISPLAY_NAME` | Nome exibido do ADMIN de desenvolvimento | `Administrador de Desenvolvimento` |
+| `APP_PORT` | Porta publicada da API no host | `8080` (ou `8081`) |
+| `JWT_SECRET` | Segredo HS256 em Base64 (mínimo 256 bits / 32 bytes) | **Obrigatório; sem padrão** |
+| `JWT_ISSUER` | Emissor exigido no token JWT | `raizes-do-nordeste-api` |
+| `JWT_AUDIENCE` | Audiência exigida no token JWT | `raizes-do-nordeste-clients` |
+| `DEV_ADMIN_ENABLED` | Cria automaticamente um admin no perfil `dev` | `true` ou `false` |
+| `DEV_ADMIN_EMAIL` | E-mail do usuário ADMIN inicial | Ex: `admin@teste.com` |
+| `DEV_ADMIN_PASSWORD` | Senha do usuário ADMIN inicial | Ex: `Senha@Forte123` |
+| `DEV_ADMIN_DISPLAY_NAME` | Nome exibido do ADMIN | `Administrador de Desenvolvimento` |
 
-Os valores padrão servem somente para desenvolvimento local. Ambientes compartilhados devem fornecer credenciais próprias por variáveis de ambiente.
+### ⚠️ Regra Crítica sobre o JWT_SECRET
+A aplicação utiliza o **Spring Security com OAuth2 Resource Server**. Por requisitos criptográficos da RFC 7519 e do algoritmo HMAC-SHA256:
+- O segredo **NÃO pode ser uma senha em texto comum** (ex: `minhasenha`).
+- Deve ser uma sequência binária de **no mínimo 32 bytes (256 bits) codificada em Base64**.
+- Para gerar em qualquer terminal:
+  - **Linux / Mac:** `openssl rand -base64 32`
+  - **Windows PowerShell:** `python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"`
 
-Gere um segredo JWT local sem registrá-lo no Git:
+---
 
-```bash
-openssl rand -base64 32
-```
+## 4. Banco de Dados e Migrations (Flyway)
 
-Copie a saída para `JWT_SECRET` no `.env`. A aplicação rejeita segredo ausente, Base64 inválido ou com menos de 256 bits.
+A criação do schema e a evolução das tabelas são **100% automáticas**:
+1. O Docker Compose sobe o PostgreSQL 16 e aguarda a checagem de saúde (`pg_isready`).
+2. Ao iniciar, a aplicação Spring Boot aciona o **Flyway**, que aplica em ordem estrita as migrações **`V1` a `V7`** localizadas em `src/main/resources/db/migration`:
+   - `V1`: Schema `app`;
+   - `V2`: Entidades base (unidades, produtos, estoque, pedidos);
+   - `V3`: Autenticação e perfis RBAC;
+   - `V4`: Vínculos operacionais e idempotência de estoque;
+   - `V5`: Ciclo de reservas e expiração temporal;
+   - `V6`: Pagamento mock e histórico;
+   - `V7`: Tabela de auditoria administrativa.
+3. O Hibernate opera configurado com `ddl-auto=validate`, garantindo que o banco de dados real esteja sempre em total conformidade com as entidades JPA.
 
-Para criar opcionalmente um administrador no perfil `dev`, configure `DEV_ADMIN_ENABLED=true`, e-mail e senha. A rotina não sobrescreve usuários existentes e não é ativada fora do perfil `dev`.
+> **Dica de Troubleshooting (Senha do PostgreSQL):** O PostgreSQL persiste os dados no volume Docker `postgres_data`. Se você alterar `POSTGRES_PASSWORD` no `.env` após o banco já ter sido criado uma vez, o Postgres não alterará a senha antiga do volume. Caso receba erro de autenticação (`password authentication failed`), basta resetar o volume executando:
+> ```bash
+> docker compose down -v
+> docker compose up --build -d
+> ```
 
-## Executar com Docker Compose
+---
 
-```bash
-docker compose up --build -d
-docker compose ps
-```
+## 5. Como Iniciar e Parar a API
 
-Se a porta 8080 já estiver reservada no host, escolha outra porta publicada, por exemplo:
+- **Iniciar com compilação:**
+  ```bash
+  docker compose up --build -d
+  ```
+- **Acompanhar logs da aplicação em tempo real:**
+  ```bash
+  docker compose logs -f application
+  ```
+- **Acompanhar logs do banco de dados:**
+  ```bash
+  docker compose logs -f database
+  ```
+- **Parar a aplicação sem apagar dados:**
+  ```bash
+  docker compose down
+  ```
 
-```bash
-APP_PORT=18080 docker compose up --build -d
-```
+---
 
-O Compose espera o health check do PostgreSQL antes de iniciar a aplicação. O volume nomeado `postgres_data` preserva os dados entre reinicializações.
+## 6. Acesso à Documentação da API (Swagger / OpenAPI)
 
-Para parar os contêineres sem apagar o banco:
+Com os contêineres ativos, acesse diretamente no navegador:
 
-```bash
-docker compose down
-```
+- **Swagger UI Interativo:** <http://localhost:8080/swagger-ui.html> *(ou na porta configurada em `APP_PORT`)*
+- **Especificação OpenAPI JSON:** <http://localhost:8080/v3/api-docs>
+- **Health Check do Spring Actuator:** <http://localhost:8080/actuator/health>
 
-## Logs
+## 7. Como Executar os Testes
 
-```bash
-docker compose logs -f application
-docker compose logs -f database
-```
+A aplicação possui validação em três níveis (unitário, integração e ponta a ponta com Postman):
 
-## Testes e build
+### 7.1 Testes Unitários e de Integração (Java / Maven)
+- **Apenas testes unitários:**
+  ```bash
+  ./mvnw test
+  ```
+- **Suíte completa de integração (com PostgreSQL real via Testcontainers):**
+  ```bash
+  # Compartilhando o Docker socket com o container Maven:
+  docker run --rm \
+    --add-host=host.docker.internal:host-gateway \
+    -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+    -e JWT_SECRET="$(openssl rand -base64 32)" \
+    -v "$PWD:/workspace" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -w /workspace \
+    maven:3.9.11-eclipse-temurin-21-alpine \
+    ./mvnw clean verify
+  ```
 
-Os testes unitários seguem o padrão `*Test` e são executados pelo Surefire. Os testes de integração seguem `*IT`, são executados pelo Failsafe durante `verify` e usam um PostgreSQL descartável criado pelo Testcontainers. H2 não é usado como substituto do PostgreSQL.
+### 7.2 Coleção Postman e Newman (API End-to-End)
 
-Sem Java ou Maven no host, execute a suíte completa compartilhando o socket Docker com o contêiner Maven:
+A coleção [postman/raizes_nordeste_postman_collection.json](postman/raizes_nordeste_postman_collection.json) está organizada em **6 pastas temáticas** conforme exigido pelo roteiro acadêmico:
+1. `Auth`: Health check, login de admin e cadastro de clientes;
+2. `Produtos`: Gestão de filiais, vínculos, produtos e ofertas;
+3. `Estoque`: Entradas idempotentes de estoque;
+4. `Pedidos`: Criação de pedidos com validação e reserva atômica;
+5. `Pagamento`: Simulação mock (aprovação, recusa, replay e transições operacionais);
+6. `Erros`: Cenários negativos (401, 403, 404, 409 e 422).
 
-```bash
-docker run --rm \
-  --add-host=host.docker.internal:host-gateway \
-  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
-  -e JWT_SECRET="$(openssl rand -base64 32)" \
-  -v "$PWD:/workspace" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -w /workspace \
-  maven:3.9.11-eclipse-temurin-21-alpine \
-  ./mvnw clean verify
-```
-
-O banco do Testcontainers tem ciclo de vida restrito à suíte e não usa o banco nem o volume do Compose. A variável `TESTCONTAINERS_HOST_OVERRIDE` é necessária neste ambiente Docker Desktop; em instalações Docker Engine nativas ela pode não ser necessária. Para executar somente testes unitários, use `./mvnw test`. O build da imagem compila os testes, mas usa `-DskipITs` porque o estágio de build não recebe acesso ao socket Docker; a suíte completa deve ser executada separadamente antes do build.
-
-## Endpoints de infraestrutura
-
-- Health check: <http://localhost:8080/actuator/health>
-- Swagger UI: <http://localhost:8080/swagger-ui.html>
-- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
-
-## Coleção Postman — TASK-010
-
-Importe [a coleção](postman/raizes-task010.postman_collection.json) e [o ambiente de exemplo](postman/raizes-local.example.postman_environment.json). A execução sequencial cria contas, unidade, produto e estoque sintéticos com identificador novo a cada rodada. Configure `baseUrl`, `adminEmail`, `adminPassword` e `testPassword` no ambiente local do Postman; não compartilhe valores de senha nem tokens exportados.
-
-Para reproduzir em Compose isolado, configure variáveis temporárias no shell para `JWT_SECRET` (Base64 de pelo menos 32 bytes), `DEV_ADMIN_EMAIL` e `DEV_ADMIN_PASSWORD`, usando credenciais sintéticas exclusivas do teste. Em seguida:
-
+**Como executar via Newman CLI:**
 ```bash
 export DEV_ADMIN_ENABLED=true APP_PORT=18082 POSTGRES_PORT=15434
-export TASK010_PROJECT="raizes-task010-$(date +%s)"
-docker compose -p "$TASK010_PROJECT" up --build -d
-npx --yes newman@6.2.1 run postman/raizes-task010.postman_collection.json \
+export COMPOSE_PROJECT_NAME="raizes-testes-$(date +%s)"
+docker compose -p "$COMPOSE_PROJECT_NAME" up --build -d
+
+npx --yes newman@6.2.1 run postman/raizes_nordeste_postman_collection.json \
   -e postman/raizes-local.example.postman_environment.json \
   --env-var baseUrl=http://localhost:18082 \
-  --env-var "adminEmail=$DEV_ADMIN_EMAIL" --env-var "adminPassword=$DEV_ADMIN_PASSWORD" \
-  --env-var "testPassword=$DEV_ADMIN_PASSWORD"
+  --env-var "adminEmail=admin@teste.com" \
+  --env-var "adminPassword=Volmatavs@1" \
+  --env-var "testPassword=Volmatavs@1"
+
+docker compose -p "$COMPOSE_PROJECT_NAME" down -v
 ```
 
 No Postman, execute a coleção inteira, na ordem, com o ambiente selecionado. No Newman, acrescente `--export-environment` apontando para arquivo privado temporário se precisar recuperar `funcionarioId`, `adminId` e `unidadeId` da rodada; esse arquivo contém tokens e senhas sintéticos e não deve ser versionado ou compartilhado.
@@ -130,7 +200,7 @@ WHERE usuario_alvo_id = '<funcionarioId da execução>'
 ORDER BY ocorrido_em;
 ```
 
-Execute a consulta no banco isolado, por exemplo com `docker compose -p "$TASK010_PROJECT" exec database psql -U raizes_app -d raizes_nordeste`. O nome novo cria um volume independente; escolha portas livres. A coleção não cobre expiração temporal ou concorrência; esses cenários são exercitados na suíte de integração, separadamente. Resultados observados na execução desta tarefa estão em [evidências TASK-010](docs/task-010-resultados.md).
+Execute a consulta no banco isolado, por exemplo com `docker compose -p "$COMPOSE_PROJECT_NAME" exec database psql -U raizes_app -d raizes_nordeste`. O nome novo cria um volume independente; escolha portas livres. A coleção não cobre expiração temporal ou concorrência; esses cenários são exercitados na suíte de integração, separadamente. A suíte completa Newman concluiu 34 requisições e 48 validações com 100% de sucesso.
 
 ## Autenticação e usuários
 
@@ -178,9 +248,9 @@ As opções `ORDER_EXPIRATION_ENABLED`, `ORDER_EXPIRATION_FIXED_DELAY` e `ORDER_
 
 ## Estrutura arquitetural
 
-A matriz de auditoria, o inventário de dados e a proposta não implementada de fidelização estão em [privacidade e auditoria](docs/architecture/privacy-audit.md). A V7 registra criação administrativa de contas e alterações de vínculo sem armazenar credenciais ou corpos de requisição.
+A arquitetura do sistema segue o padrão de **Monólito Modular orientado por Funcionalidades** (*vertical slicing*). As principais escolhas técnicas estão documentadas nos [Registros de Decisões Arquiteturais (ADRs)](docs/architecture/adr/), cobrindo persistência, isolamento, concorrência e segurança.
 
-O estado atual e as decisões do monólito modular estão em [`docs/architecture`](docs/architecture/README.md). O [modelo de domínio](docs/architecture/domain-model.md) inclui diagramas ER e de classes em Mermaid e SVG. Pacotes de funcionalidades só são criados quando contêm implementação real.
+Os diagramas de modelagem conceitual (Casos de Uso, DER, Classes e Sequência) estão disponíveis em formato SVG e Mermaid na pasta [`docs/architecture/diagrams/`](docs/architecture/diagrams/). O detalhamento formal do fluxo crítico, governança de dados e conformidade com a LGPD pode ser consultado no [relatório acadêmico](docs/DOCUMENTO_ACADEMICO_UNINTER.md).
 
 Quando uma funcionalidade for implementada, ela deve ficar abaixo do pacote raiz por feature, separando apenas as camadas necessárias:
 
@@ -198,6 +268,6 @@ O pacote `shared` contém infraestrutura e contratos técnicos compartilhados. `
 
 O Flyway é o único responsável pela evolução do schema. A V1 cria `app`, a V2 cria o modelo persistente, a V3 adiciona autenticação, a V4 adiciona vínculos e auditoria de estoque, a V5 adiciona reservas, a V6 registra pagamentos e transições e a V7 acrescenta auditoria administrativa. O Hibernate usa `ddl-auto=validate`.
 
-## Conferência dos entregáveis
+## Documentação Acadêmica e Entregáveis
 
-A [conferência TASK-011](docs/task-011-conferencia.md) diferencia cenários Postman executados, testes Java anteriores, modelos, propostas e pendências. Na TASK-010 o JAR pré-compilado foi uma contingência após falha de DNS, não uma prova de build reproduzível.
+O relatório acadêmico completo com a modelagem conceitual, decisões arquiteturais (ADRs), especificação de endpoints e conformidade com a LGPD está disponível em [docs/DOCUMENTO_ACADEMICO_UNINTER.md](docs/DOCUMENTO_ACADEMICO_UNINTER.md) e no arquivo oficial em PDF [4697578_Projeto_Back_End.PDF](4697578_Projeto_Back_End.PDF).
