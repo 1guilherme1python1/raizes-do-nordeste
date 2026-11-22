@@ -1,46 +1,20 @@
 sequenceDiagram
-    actor U as Usuário autenticado
-    participant API as Pedido API
-    participant P as PedidoService
-    participant C as Catálogo
-    participant E as Estoque
-    participant DB as PostgreSQL
-    U->>API: POST /api/v1/pedidos + Idempotency-Key
-    API->>P: comando + identidade/perfis
-    P->>DB: advisory lock e consulta da chave
-    P->>C: validar unidade, produto, oferta e preço
-    P->>DB: persistir pedido e snapshots, sem commit
-    P->>E: reservar itens em ordem estável na mesma transação
-    E->>DB: atualizar reservado + movimentos RESERVA
-    DB-->>P: commit atômico
-    P-->>API: 201 (ou 200 em repetição)
+    autonumber
+    actor Cliente as Cliente (App / Web / Totem)
+    participant API as API Back-End (Spring Boot 3)
+    participant DB as Banco de Dados (PostgreSQL 16)
+    participant GW as Gateway Pagamento (Mock)
 
-    U->>API: POST /pedidos/{id}/pagamentos + chave e cenário
-    API->>P: autorizar e bloquear pedido
-    P->>DB: consultar replay e validade
-    alt reserva vencida
-        P->>E: liberar reserva e marcar EXPIRADO
-        DB-->>API: commit
-        API-->>U: 409 RESERVA_EXPIRADA
-    else aprovação simulada
-        P->>DB: persistir pagamento APROVADO
-        P->>E: baixar físico e reservado
-        P->>DB: marcar CONFIRMADO e registrar transição
-        DB-->>API: commit
-        API-->>U: 201 CONFIRMADO
-        U->>API: PATCH EM_PREPARO, PRONTO, ENTREGUE
-        API->>DB: validar perfil e transições sequenciais
-    else recusa simulada
-        P->>DB: persistir pagamento RECUSADO
-        P->>E: liberar reserva
-        P->>DB: marcar CANCELADO e registrar transição
-        DB-->>API: commit
-        API-->>U: 201 CANCELADO
-    end
+    Note over Cliente,DB: ETAPA 1: CRIAÇÃO E RESERVA DE ESTOQUE
+    Cliente->>API: POST /api/v1/pedidos (criação do pedido multicanal)
+    API->>DB: Valida estoque e trava saldo (PESSIMISTIC_WRITE)
+    DB-->>API: Saldo reservado e pedido gravado (AGUARDANDO_PAGAMENTO)
+    API-->>Cliente: HTTP 201 Created (retorna ID do pedido e tempo de expiração)
 
-    opt cancelamento ou expiração de pedido pendente
-        P->>DB: lock do pedido e revalidação do status
-        P->>E: liberar reservas
-        E->>DB: movimentos LIBERACAO
-        P->>DB: CANCELADO ou EXPIRADO
-    end
+    Note over Cliente,GW: ETAPA 2: SIMULAÇÃO E CONFIRMAÇÃO DE PAGAMENTO
+    Cliente->>API: POST /api/v1/pagamentos/simular { cenario: "APROVAR", chave }
+    API->>GW: Envia autorização com Idempotency-Key ao Gateway Mock
+    GW-->>API: Retorno síncrono: APROVADO (transacaoId gerado)
+    API->>DB: Atualiza pedido para CONFIRMADO e baixa estoque físico
+    DB-->>API: Commit atômico e inserção de registro de auditoria
+    API-->>Cliente: HTTP 200 OK (Pedido confirmado e liberado para preparo)
